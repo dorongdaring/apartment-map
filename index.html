@@ -15207,3 +15207,175 @@
         
 </script>
 </html>
+<script>
+  let currentMarker = null;
+  let currentCircle = null;
+
+  function showMyLocation() {
+    if (!navigator.geolocation) {
+      alert("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        const locPosition = new kakao.maps.LatLng(lat, lng);
+
+        // 기존 위치 마커 제거
+        if (currentMarker) currentMarker.setMap(null);
+        if (currentCircle) currentCircle.setMap(null);
+
+        // 현재 위치 마커 생성
+        currentMarker = new kakao.maps.Marker({
+          map: map,
+          position: locPosition
+        });
+
+        // 현재 위치 주변 원 (선택사항)
+        currentCircle = new kakao.maps.Circle({
+          center: locPosition,
+          radius: 50,
+          strokeWeight: 2,
+          strokeColor: '#3366FF',
+          strokeOpacity: 0.8,
+          strokeStyle: 'solid',
+          fillColor: '#3366FF',
+          fillOpacity: 0.2
+        });
+        currentCircle.setMap(map);
+
+        // 지도 중심을 현재 위치로 이동
+        map.setCenter(locPosition);
+      },
+      function(error) {
+        console.error("위치 정보를 가져오지 못했습니다:", error);
+        alert("위치 정보를 가져오지 못했습니다. 브라우저에서 위치 권한을 허용해주세요.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  showMyLocation();
+</script>
+<script>
+  let currentMarker = null;
+  let currentCircle = null;
+  let watchId = null;
+
+  function startTrackingLocation() {
+    if (!navigator.geolocation) {
+      alert("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+      return;
+    }
+
+    watchId = navigator.geolocation.watchPosition(
+      function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const locPosition = new kakao.maps.LatLng(lat, lng);
+
+        if (currentMarker) currentMarker.setMap(null);
+        if (currentCircle) currentCircle.setMap(null);
+
+        currentMarker = new kakao.maps.Marker({
+          map: map,
+          position: locPosition
+        });
+
+        currentCircle = new kakao.maps.Circle({
+          center: locPosition,
+          radius: 50,
+          strokeWeight: 2,
+          strokeColor: '#3366FF',
+          strokeOpacity: 0.8,
+          strokeStyle: 'solid',
+          fillColor: '#3366FF',
+          fillOpacity: 0.2
+        });
+        currentCircle.setMap(map);
+
+        map.setCenter(locPosition);
+      },
+      function(error) {
+        console.error("실시간 위치 추적 실패:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  startTrackingLocation();
+</script>
+<script>
+  function getColorByMoveInDate(moveInDateStr) {
+    const today = new Date();
+    const moveInDate = new Date(moveInDateStr);
+
+    // 날짜 차이(일)
+    const diffTime = moveInDate - today;
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    // 기준: 0일 ~ 730일(약 2년)
+    const maxDays = 730;
+    const clamped = Math.max(0, Math.min(diffDays, maxDays));
+
+    // 가까울수록 0, 멀수록 1
+    const ratio = clamped / maxDays;
+
+    // ratio 0 => 빨강, ratio 1 => 초록/청록
+    // HSV 느낌 대신 RGB 직접 보간
+    const r = Math.round(255 * (1 - ratio) + 0 * ratio);
+    const g = Math.round(60 * (1 - ratio) + 180 * ratio);
+    const b = Math.round(60 * (1 - ratio) + 120 * ratio);
+
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+</script>
+<script>
+  function createColorDotMarker(map, lat, lng, color, contentText) {
+    const position = new kakao.maps.LatLng(lat, lng);
+
+    const content = `
+      <div style="
+        width:18px;
+        height:18px;
+        background:${color};
+        border:2px solid white;
+        border-radius:50%;
+        box-shadow:0 0 4px rgba(0,0,0,0.3);
+      " title="${contentText}"></div>
+    `;
+
+    const overlay = new kakao.maps.CustomOverlay({
+      position: position,
+      content: content,
+      yAnchor: 0.5
+    });
+
+    overlay.setMap(map);
+    return overlay;
+  }
+</script>
+<script>
+  apartmentData.forEach(item => {
+    const color = getColorByMoveInDate(item.move_in_date);
+
+    createColorDotMarker(
+      map,
+      item.lat,
+      item.lng,
+      color,
+      `${item.name} / ${item.move_in_date}`
+    );
+  });
+</script>
